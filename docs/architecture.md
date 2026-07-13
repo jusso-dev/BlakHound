@@ -67,7 +67,7 @@ AssumeRole/pass-role graph → path query → MCP `find_attack_paths`.
 2. IAM graph (users/groups/roles/policies, trust, AssumeRole, evidence) — **done**
 3. Workloads & data (EC2, Lambda, ECS, S3, Secrets Manager, KMS)
 4. Attack paths (privesc rules, traversal, findings, scoring, exports) — **core done**
-5. Network paths (VPC, SGs, LBs, RDS, internet exposure)
+5. Network paths (VPC, SGs, LBs, RDS, internet exposure) — **core done**
 6. MCP (tools, resources, prompts, tests) — **core done**
 
 Future: interactive graph viewer, CloudTrail/Access Analyzer/Config/Security Hub

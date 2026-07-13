@@ -1,0 +1,51 @@
+- id: BH-AWS-NET-001
+  title: Security group allows unrestricted ingress from the internet
+  category: network-exposure
+  severity: high
+  description: >
+    A security group has an inbound rule open to 0.0.0.0/0 (or ::/0). Any
+    resource attached to it is reachable from the entire internet on the open
+    ports.
+  edges: [allows-ingress]
+  remediation: >
+    Restrict the ingress rule to known CIDRs, or front the workload with a load
+    balancer / VPN and remove the 0.0.0.0/0 rule.
+
+- id: BH-AWS-NET-002
+  title: Resource is reachable from the internet
+  category: network-exposure
+  severity: high
+  description: >
+    A load balancer, EC2 instance or RDS database is reachable from the internet
+    via a public endpoint and an open security group, widening the attack
+    surface for anything running on it.
+  edges: [reachable-from]
+  remediation: >
+    Move the resource to a private subnet, remove the public endpoint, and
+    restrict its security group to trusted sources.
+
+- id: BH-AWS-NET-003
+  title: RDS instance is publicly accessible
+  category: network-exposure
+  severity: critical
+  description: >
+    An RDS database has PubliclyAccessible enabled, exposing the database
+    endpoint to the internet. Combined with an open security group this allows
+    direct connection attempts from anywhere.
+  edges: [reachable-from]
+  remediation: >
+    Set PubliclyAccessible=false and place the instance in private subnets with
+    a security group scoped to application hosts.
+
+- id: BH-AWS-NET-004
+  title: Load balancer is internet-facing
+  category: network-exposure
+  severity: medium
+  description: >
+    An Elastic Load Balancer uses the internet-facing scheme. This is often
+    intentional, but confirm the backing target group and listeners should be
+    exposed publicly.
+  edges: [reachable-from]
+  remediation: >
+    Use the internal scheme for load balancers that should not be public, and
+    enforce TLS + WAF on internet-facing ones.
