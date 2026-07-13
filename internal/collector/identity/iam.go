@@ -11,8 +11,8 @@ import (
 	iamtypes "github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/aws/smithy-go"
 
-	"github.com/blakhound/blakhound/internal/collector"
-	"github.com/blakhound/blakhound/pkg/models"
+	"github.com/jusso-dev/BlakHound/internal/collector"
+	"github.com/jusso-dev/BlakHound/pkg/models"
 )
 
 // IAMCollector collects IAM users, groups, roles and policies plus the account

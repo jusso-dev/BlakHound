@@ -7,8 +7,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 
-	"github.com/blakhound/blakhound/internal/collector"
-	"github.com/blakhound/blakhound/pkg/models"
+	"github.com/jusso-dev/BlakHound/internal/collector"
+	"github.com/jusso-dev/BlakHound/pkg/models"
 )
 
 // S3Collector collects S3 buckets, their policies and public-access settings.

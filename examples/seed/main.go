@@ -12,10 +12,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/blakhound/blakhound/internal/analysis"
-	"github.com/blakhound/blakhound/internal/collector"
-	"github.com/blakhound/blakhound/internal/graph"
-	"github.com/blakhound/blakhound/pkg/models"
+	"github.com/jusso-dev/BlakHound/internal/analysis"
+	"github.com/jusso-dev/BlakHound/internal/collector"
+	"github.com/jusso-dev/BlakHound/internal/graph"
+	"github.com/jusso-dev/BlakHound/pkg/models"
 )
 
 const acct = "123456789012"

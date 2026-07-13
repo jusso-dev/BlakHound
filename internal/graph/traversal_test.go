@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/blakhound/blakhound/pkg/models"
+	"github.com/jusso-dev/BlakHound/pkg/models"
 )
 
 func testStore(t *testing.T) *Store {

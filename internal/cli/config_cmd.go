@@ -9,9 +9,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/blakhound/blakhound/internal/app"
-	"github.com/blakhound/blakhound/internal/graph"
-	"github.com/blakhound/blakhound/pkg/models"
+	"github.com/jusso-dev/BlakHound/internal/app"
+	"github.com/jusso-dev/BlakHound/internal/graph"
+	"github.com/jusso-dev/BlakHound/pkg/models"
 )
 
 func init() {

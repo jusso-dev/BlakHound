@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 
-	bhconfig "github.com/blakhound/blakhound/internal/config"
+	bhconfig "github.com/jusso-dev/BlakHound/internal/config"
 )
 
 // Load builds an aws.Config honouring profile, region, and optional AssumeRole.

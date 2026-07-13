@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/blakhound/blakhound/pkg/models"
+	"github.com/jusso-dev/BlakHound/pkg/models"
 )
 
 func TestMermaidEscapeNeutralisesInjection(t *testing.T) {

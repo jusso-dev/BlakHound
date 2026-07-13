@@ -14,7 +14,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/blakhound/blakhound/internal/app"
+	"github.com/jusso-dev/BlakHound/internal/app"
 )
 
 // protocolVersion advertised to clients.

@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/blakhound/blakhound/internal/graph"
-	"github.com/blakhound/blakhound/internal/iam"
-	"github.com/blakhound/blakhound/pkg/models"
+	"github.com/jusso-dev/BlakHound/internal/graph"
+	"github.com/jusso-dev/BlakHound/internal/iam"
+	"github.com/jusso-dev/BlakHound/pkg/models"
 )
 
 // companionServiceActions used by the pass-role escalation rule.

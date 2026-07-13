@@ -3,8 +3,8 @@ package collector
 import (
 	"time"
 
-	"github.com/blakhound/blakhound/internal/iam"
-	"github.com/blakhound/blakhound/pkg/models"
+	"github.com/jusso-dev/BlakHound/internal/iam"
+	"github.com/jusso-dev/BlakHound/pkg/models"
 )
 
 // ResourcePolicyEdges parses a resource-based policy and returns exposure nodes,

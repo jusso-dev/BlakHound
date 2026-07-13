@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/blakhound/blakhound/internal/graph"
-	"github.com/blakhound/blakhound/pkg/models"
+	"github.com/jusso-dev/BlakHound/internal/graph"
+	"github.com/jusso-dev/BlakHound/pkg/models"
 )
 
 // accessRule maps a sensitive resource type to the canonical action that grants

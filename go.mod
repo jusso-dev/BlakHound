@@ -1,4 +1,4 @@
-module github.com/blakhound/blakhound
+module github.com/jusso-dev/BlakHound
 
 go 1.26.3
 

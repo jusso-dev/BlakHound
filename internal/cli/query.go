@@ -8,12 +8,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/blakhound/blakhound/internal/app"
-	"github.com/blakhound/blakhound/internal/collector"
-	"github.com/blakhound/blakhound/internal/config"
-	"github.com/blakhound/blakhound/internal/export"
-	"github.com/blakhound/blakhound/internal/graph"
-	"github.com/blakhound/blakhound/pkg/models"
+	"github.com/jusso-dev/BlakHound/internal/app"
+	"github.com/jusso-dev/BlakHound/internal/collector"
+	"github.com/jusso-dev/BlakHound/internal/config"
+	"github.com/jusso-dev/BlakHound/internal/export"
+	"github.com/jusso-dev/BlakHound/internal/graph"
+	"github.com/jusso-dev/BlakHound/pkg/models"
 )
 
 func traverseOpts(maxDepth, limit int, edges, minConf, toType string) graph.TraverseOptions {

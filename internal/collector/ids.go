@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/blakhound/blakhound/internal/evidence"
-	"github.com/blakhound/blakhound/pkg/models"
+	"github.com/jusso-dev/BlakHound/internal/evidence"
+	"github.com/jusso-dev/BlakHound/pkg/models"
 )
 
 // AccountNodeID returns the deterministic node id for an AWS account.

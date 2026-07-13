@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/blakhound/blakhound/internal/collector"
-	"github.com/blakhound/blakhound/internal/graph"
-	"github.com/blakhound/blakhound/pkg/models"
+	"github.com/jusso-dev/BlakHound/internal/collector"
+	"github.com/jusso-dev/BlakHound/internal/graph"
+	"github.com/jusso-dev/BlakHound/pkg/models"
 )
 
 const acct = "111111111111"

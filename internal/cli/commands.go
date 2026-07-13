@@ -9,12 +9,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/blakhound/blakhound/internal/app"
-	"github.com/blakhound/blakhound/internal/awsclient"
-	"github.com/blakhound/blakhound/internal/config"
-	"github.com/blakhound/blakhound/internal/graph"
-	"github.com/blakhound/blakhound/internal/version"
-	"github.com/blakhound/blakhound/pkg/models"
+	"github.com/jusso-dev/BlakHound/internal/app"
+	"github.com/jusso-dev/BlakHound/internal/awsclient"
+	"github.com/jusso-dev/BlakHound/internal/config"
+	"github.com/jusso-dev/BlakHound/internal/graph"
+	"github.com/jusso-dev/BlakHound/internal/version"
+	"github.com/jusso-dev/BlakHound/pkg/models"
 )
 
 func newVersionCmd() *cobra.Command {

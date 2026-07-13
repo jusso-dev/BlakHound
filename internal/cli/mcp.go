@@ -9,8 +9,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/blakhound/blakhound/internal/app"
-	"github.com/blakhound/blakhound/internal/mcp"
+	"github.com/jusso-dev/BlakHound/internal/app"
+	"github.com/jusso-dev/BlakHound/internal/mcp"
 )
 
 func newMCPCmd() *cobra.Command {

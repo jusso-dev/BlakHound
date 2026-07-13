@@ -31,10 +31,10 @@ database or LLM is required.
 
 ```bash
 # Go toolchain
-go install github.com/blakhound/blakhound/cmd/blakhound@latest
+go install github.com/jusso-dev/BlakHound/cmd/blakhound@latest
 
 # Homebrew (once tapped)
-brew install blakhound/tap/blakhound
+brew install jusso-dev/tap/blakhound
 ```
 
 Prebuilt binaries for macOS (arm64/amd64), Linux (arm64/amd64) and Windows

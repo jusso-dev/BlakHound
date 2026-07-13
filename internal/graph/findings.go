@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/blakhound/blakhound/pkg/models"
+	"github.com/jusso-dev/BlakHound/pkg/models"
 )
 
 // UpsertFinding inserts or refreshes a finding keyed by fingerprint. A

@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blakhound/blakhound/internal/version"
-	"github.com/blakhound/blakhound/pkg/models"
+	"github.com/jusso-dev/BlakHound/internal/version"
+	"github.com/jusso-dev/BlakHound/pkg/models"
 	_ "modernc.org/sqlite"
 )
 

@@ -10,9 +10,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/blakhound/blakhound/internal/app"
-	"github.com/blakhound/blakhound/internal/config"
-	"github.com/blakhound/blakhound/internal/graph"
+	"github.com/jusso-dev/BlakHound/internal/app"
+	"github.com/jusso-dev/BlakHound/internal/config"
+	"github.com/jusso-dev/BlakHound/internal/graph"
 )
 
 var cfg = &config.Config{}

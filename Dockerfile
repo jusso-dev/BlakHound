@@ -6,7 +6,7 @@ RUN go mod download
 COPY . .
 ARG VERSION=dev
 RUN CGO_ENABLED=0 go build \
-    -ldflags "-X github.com/blakhound/blakhound/internal/version.Version=${VERSION}" \
+    -ldflags "-X github.com/jusso-dev/BlakHound/internal/version.Version=${VERSION}" \
     -o /out/blakhound ./cmd/blakhound
 
 # Runtime stage (distroless, non-root). For development/release testing only;

@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/blakhound/blakhound/pkg/models"
+	"github.com/jusso-dev/BlakHound/pkg/models"
 )
 
 // DefaultMaxNodes bounds graph exports to keep output readable.

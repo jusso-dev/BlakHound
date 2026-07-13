@@ -6,8 +6,8 @@ import (
 
 	sqstypes "github.com/aws/aws-sdk-go-v2/service/sqs/types"
 
-	"github.com/blakhound/blakhound/internal/collector"
-	"github.com/blakhound/blakhound/pkg/models"
+	"github.com/jusso-dev/BlakHound/internal/collector"
+	"github.com/jusso-dev/BlakHound/pkg/models"
 )
 
 func structEdge(from, typ, to string, now time.Time, explanation string) models.Edge {

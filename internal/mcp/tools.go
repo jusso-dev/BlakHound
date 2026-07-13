@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/blakhound/blakhound/internal/graph"
+	"github.com/jusso-dev/BlakHound/internal/graph"
 )
 
 // tool describes an MCP tool.

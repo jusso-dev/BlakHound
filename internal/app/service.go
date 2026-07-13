@@ -9,15 +9,15 @@ import (
 	"sort"
 	"time"
 
-	"github.com/blakhound/blakhound/internal/analysis"
-	"github.com/blakhound/blakhound/internal/awsclient"
-	"github.com/blakhound/blakhound/internal/collector"
-	"github.com/blakhound/blakhound/internal/collector/compute"
-	"github.com/blakhound/blakhound/internal/collector/identity"
-	"github.com/blakhound/blakhound/internal/collector/storage"
-	"github.com/blakhound/blakhound/internal/config"
-	"github.com/blakhound/blakhound/internal/graph"
-	"github.com/blakhound/blakhound/pkg/models"
+	"github.com/jusso-dev/BlakHound/internal/analysis"
+	"github.com/jusso-dev/BlakHound/internal/awsclient"
+	"github.com/jusso-dev/BlakHound/internal/collector"
+	"github.com/jusso-dev/BlakHound/internal/collector/compute"
+	"github.com/jusso-dev/BlakHound/internal/collector/identity"
+	"github.com/jusso-dev/BlakHound/internal/collector/storage"
+	"github.com/jusso-dev/BlakHound/internal/config"
+	"github.com/jusso-dev/BlakHound/internal/graph"
+	"github.com/jusso-dev/BlakHound/pkg/models"
 )
 
 // Service bundles the graph store and configuration.

@@ -15,8 +15,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/smithy-go"
 
-	"github.com/blakhound/blakhound/internal/collector"
-	"github.com/blakhound/blakhound/pkg/models"
+	"github.com/jusso-dev/BlakHound/internal/collector"
+	"github.com/jusso-dev/BlakHound/pkg/models"
 )
 
 func warn(service, api, region string, err error, impact string) collector.Warning {

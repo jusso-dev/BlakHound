@@ -1,6 +1,6 @@
 package analysis
 
-import "github.com/blakhound/blakhound/pkg/models"
+import "github.com/jusso-dev/BlakHound/pkg/models"
 
 // sensitiveTargetTypes raise a path's destination sensitivity.
 var sensitiveTargetTypes = map[string]float64{

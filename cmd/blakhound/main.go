@@ -10,7 +10,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/blakhound/blakhound/internal/cli"
+	"github.com/jusso-dev/BlakHound/internal/cli"
 )
 
 func main() {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/blakhound/blakhound/pkg/models"
+	"github.com/jusso-dev/BlakHound/pkg/models"
 )
 
 // TraverseOptions controls path finding.
