@@ -1,0 +1,15 @@
+# Development / release-testing only. BlakHound does not require Docker at runtime.
+services:
+  blakhound:
+    build:
+      context: .
+      args:
+        VERSION: dev
+    image: blakhound:dev
+    # Mount AWS credentials read-only and a local data dir for the SQLite graph.
+    volumes:
+      - ~/.aws:/home/nonroot/.aws:ro
+      - ./data:/data
+    environment:
+      - AWS_PROFILE=${AWS_PROFILE:-default}
+    command: ["--help"]

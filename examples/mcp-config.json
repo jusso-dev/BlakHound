@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "blakhound": {
+      "command": "/usr/local/bin/blakhound",
+      "args": ["mcp", "--db", "/Users/example/.blakhound/blakhound.db"]
+    },
+    "blakhound-dev": {
+      "command": "go",
+      "args": ["run", "./cmd/blakhound", "mcp"],
+      "cwd": "/path/to/blakhound"
+    }
+  }
+}

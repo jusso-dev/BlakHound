@@ -1,0 +1,102 @@
+- id: BH-AWS-IAM-001
+  title: Principal can create a new version of an attached IAM policy
+  category: privilege-escalation
+  severity: critical
+  description: >
+    A principal that can call iam:CreatePolicyVersion (and set it as default)
+    on a policy may grant itself or others arbitrary additional permissions.
+  actions: [iam:CreatePolicyVersion, iam:SetDefaultPolicyVersion]
+  edges: [can-update-policy]
+  remediation: >
+    Restrict IAM policy administration and require a controlled deployment path.
+
+- id: BH-AWS-IAM-002
+  title: Principal can attach a managed policy to itself or others
+  category: privilege-escalation
+  severity: critical
+  description: >
+    iam:AttachUserPolicy / AttachRolePolicy / AttachGroupPolicy allows a
+    principal to attach AdministratorAccess or another privileged policy.
+  actions: [iam:AttachUserPolicy, iam:AttachRolePolicy, iam:AttachGroupPolicy]
+  edges: [can-attach-policy]
+  remediation: >
+    Remove policy-attachment permissions from non-administrative principals.
+
+- id: BH-AWS-IAM-003
+  title: Principal can put an inline policy on a principal
+  category: privilege-escalation
+  severity: critical
+  description: >
+    iam:PutUserPolicy / PutRolePolicy / PutGroupPolicy lets a principal write
+    an arbitrary inline policy, granting any permission.
+  actions: [iam:PutUserPolicy, iam:PutRolePolicy, iam:PutGroupPolicy]
+  edges: [can-put-inline-policy]
+  remediation: >
+    Remove inline-policy write permissions from non-administrative principals.
+
+- id: BH-AWS-IAM-004
+  title: Principal can pass a role to a compute service it can launch
+  category: privilege-escalation
+  severity: critical
+  description: >
+    iam:PassRole combined with a service launch permission (Lambda, EC2, ECS,
+    CloudFormation, Glue) lets a principal execute code as a more privileged
+    role.
+  actions: [iam:PassRole]
+  companion_actions:
+    - lambda:CreateFunction
+    - ec2:RunInstances
+    - ecs:RegisterTaskDefinition
+    - ecs:RunTask
+    - cloudformation:CreateStack
+    - glue:CreateDevEndpoint
+  edges: [pass-role]
+  remediation: >
+    Constrain iam:PassRole with iam:PassedToService and an approved role list.
+
+- id: BH-AWS-IAM-005
+  title: Principal can create access keys or login profiles for a principal
+  category: privilege-escalation
+  severity: high
+  description: >
+    iam:CreateAccessKey / CreateLoginProfile / UpdateLoginProfile allow a
+    principal to take over another identity's credentials.
+  actions: [iam:CreateAccessKey, iam:CreateLoginProfile, iam:UpdateLoginProfile]
+  edges: [can-create-access-key]
+  remediation: >
+    Restrict credential-management APIs to identity administrators.
+
+- id: BH-AWS-IAM-006
+  title: Principal can modify a role trust policy
+  category: privilege-escalation
+  severity: high
+  description: >
+    iam:UpdateAssumeRolePolicy lets a principal add itself as a trusted
+    principal of a privileged role.
+  actions: [iam:UpdateAssumeRolePolicy]
+  edges: [can-modify-trust-policy]
+  remediation: >
+    Restrict who may modify role trust policies.
+
+- id: BH-AWS-IAM-007
+  title: Principal has effective administrator access
+  category: privilege-escalation
+  severity: critical
+  description: >
+    The principal is allowed Action "*" on Resource "*", equivalent to
+    AdministratorAccess.
+  actions: ["*"]
+  edges: [can-administer]
+  remediation: >
+    Replace wildcard administrator grants with least-privilege policies.
+
+- id: BH-AWS-XACCOUNT-001
+  title: Role trusts an external or wildcard principal
+  category: cross-account
+  severity: high
+  description: >
+    The role trust policy permits a principal outside this account, or any
+    principal ("*"), potentially allowing external assumption.
+  edges: [external-trust, cross-account-access]
+  remediation: >
+    Scope the trust policy to specific principals and add source conditions.

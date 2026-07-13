@@ -1,0 +1,61 @@
+version: 2
+project_name: blakhound
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: blakhound
+    main: ./cmd/blakhound
+    binary: blakhound
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/blakhound/blakhound/internal/version.Version={{.Version}}
+      - -X github.com/blakhound/blakhound/internal/version.Commit={{.ShortCommit}}
+      - -X github.com/blakhound/blakhound/internal/version.BuildDate={{.Date}}
+    goos: [darwin, linux, windows]
+    goarch: [amd64, arm64]
+    ignore:
+      - goos: windows
+        goarch: arm64
+
+archives:
+  - formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+signs:
+  - artifacts: checksum
+    cmd: cosign
+    args: ["sign-blob", "--yes", "--output-signature=${signature}", "${artifact}"]
+    output: true
+
+brews:
+  - repository:
+      owner: blakhound
+      name: homebrew-tap
+    homepage: "https://github.com/blakhound/blakhound"
+    description: "Local-first AWS attack-path discovery CLI and MCP server"
+    license: "Apache-2.0"
+
+release:
+  prerelease: auto
+
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"

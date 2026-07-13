@@ -1,0 +1,31 @@
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  enable:
+    - govet
+    - errcheck
+    - staticcheck
+    - ineffassign
+    - unused
+    - gofmt
+    - goimports
+    - misspell
+    - bodyclose
+    - gosec
+    - revive
+
+linters-settings:
+  goimports:
+    local-prefixes: github.com/blakhound/blakhound
+  gosec:
+    excludes:
+      - G104 # handled explicitly where errors are intentionally ignored
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gosec
+        - errcheck
