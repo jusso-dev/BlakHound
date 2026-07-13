@@ -80,7 +80,7 @@ func (s *Store) ListFindings(ctx context.Context, f FindingFilter) ([]models.Fin
 		return nil, err
 	}
 	defer rows.Close()
-	var out []models.Finding
+	out := []models.Finding{}
 	for rows.Next() {
 		f, err := scanFinding(rows)
 		if err != nil {

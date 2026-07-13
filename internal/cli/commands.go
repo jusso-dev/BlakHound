@@ -304,7 +304,7 @@ func filterFindings(in []models.Finding, severity, category string) []models.Fin
 	if severity == "" && category == "" {
 		return in
 	}
-	var out []models.Finding
+	out := make([]models.Finding, 0, len(in))
 	for _, f := range in {
 		if severity != "" && f.Severity != severity {
 			continue

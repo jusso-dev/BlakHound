@@ -2,12 +2,34 @@ package graph
 
 import (
 	"context"
+	"encoding/json"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/jusso-dev/BlakHound/pkg/models"
 )
+
+func TestListFindingsEmptyJSON(t *testing.T) {
+	ctx := context.Background()
+	store, err := Open(ctx, filepath.Join(t.TempDir(), "empty-findings.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { store.Close() })
+
+	findings, err := store.ListFindings(ctx, FindingFilter{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := json.Marshal(findings)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != "[]" {
+		t.Fatalf("expected empty JSON array, got %s", b)
+	}
+}
 
 func testStore(t *testing.T) *Store {
 	t.Helper()

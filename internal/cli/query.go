@@ -103,6 +103,40 @@ func newWhatCanAccessCmd() *cobra.Command {
 	return cmd
 }
 
+func newExposureCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "exposure",
+		Short: "List resources reachable from the internet",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return withService(cmd.Context(), func(ctx context.Context, svc *app.Service) error {
+				exposed, err := svc.InternetExposure(ctx)
+				if err != nil {
+					return err
+				}
+				emit(exposed, func() { printExposure(exposed) })
+				return nil
+			})
+		},
+	}
+}
+
+func printExposure(rs []app.ExposedResource) {
+	if len(rs) == 0 {
+		fmt.Println("No internet-exposed resources.")
+		return
+	}
+	for _, r := range rs {
+		ports := r.Ports
+		if ports == "" {
+			ports = "-"
+		}
+		fmt.Printf("%-16s %-40s ports=%s\n", r.Resource.Type, nodeLabel(r.Resource), ports)
+		if r.Reason != "" {
+			fmt.Printf("    %s\n", r.Reason)
+		}
+	}
+}
+
 func newExplainCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "explain <edge-id>",

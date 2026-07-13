@@ -2,6 +2,7 @@ package analysis
 
 import (
 	"context"
+	"encoding/json"
 	"path/filepath"
 	"testing"
 	"time"
@@ -10,6 +11,27 @@ import (
 	"github.com/jusso-dev/BlakHound/internal/graph"
 	"github.com/jusso-dev/BlakHound/pkg/models"
 )
+
+func TestScanEmptyJSON(t *testing.T) {
+	ctx := context.Background()
+	store, err := graph.Open(ctx, filepath.Join(t.TempDir(), "empty-scan.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { store.Close() })
+
+	findings, err := Scan(ctx, store, "", acct)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := json.Marshal(findings)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != "[]" {
+		t.Fatalf("expected empty JSON array, got %s", b)
+	}
+}
 
 const acct = "111111111111"
 

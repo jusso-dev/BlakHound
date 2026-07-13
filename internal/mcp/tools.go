@@ -49,6 +49,7 @@ func toolList() []tool {
 		{"what_can_principal_access", "List resources a principal can reach.", obj(map[string]any{
 			"principal": str("arn or node id"),
 		}, "principal")},
+		{"find_internet_exposed_resources", "List resources reachable from the internet with their open ports.", obj(map[string]any{})},
 		{"explain_graph_edge", "Return an edge and all its evidence.", obj(map[string]any{"edge_id": str("edge id")}, "edge_id")},
 		{"list_security_findings", "List findings filtered by severity/category/status.", obj(map[string]any{
 			"severity": arrStr(), "category": arrStr(), "status": arrStr(),
@@ -177,6 +178,9 @@ func (s *Server) invokeTool(ctx context.Context, name string, raw json.RawMessag
 			return nil, err
 		}
 		return s.svc.WhatCanReach(ctx, a.Principal, graph.TraverseOptions{})
+
+	case "find_internet_exposed_resources":
+		return s.svc.InternetExposure(ctx)
 
 	case "explain_graph_edge":
 		var a struct {

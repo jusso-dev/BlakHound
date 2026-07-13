@@ -278,6 +278,43 @@ func (s *Service) WhatCanReach(ctx context.Context, principal string, opt graph.
 	return out, nil
 }
 
+// ExposedResource is a resource reachable from the internet, with the open
+// ports and the reason it is exposed.
+type ExposedResource struct {
+	Resource   models.Node `json:"resource"`
+	Ports      string      `json:"ports"`
+	Reason     string      `json:"reason"`
+	EdgeID     string      `json:"edge_id"`
+	Confidence string      `json:"confidence"`
+}
+
+// InternetExposure returns every resource the internet node can reach via a
+// derived reachable-from edge, sorted by resource type then name. It reads the
+// graph produced by analysis.DeriveNetworkExposure; run a collection first.
+func (s *Service) InternetExposure(ctx context.Context) ([]ExposedResource, error) {
+	edges, err := s.Store.OutEdges(ctx, models.NodeInternet, []string{models.EdgeReachableFrom})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ExposedResource, 0, len(edges))
+	for _, e := range edges {
+		n, err := s.Store.GetNode(ctx, e.ToNodeID)
+		if err != nil || n == nil {
+			continue
+		}
+		ports, _ := e.Properties["ports"].(string)
+		reason, _ := e.Properties["explanation"].(string)
+		out = append(out, ExposedResource{Resource: *n, Ports: ports, Reason: reason, EdgeID: e.ID, Confidence: e.Confidence})
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].Resource.Type != out[j].Resource.Type {
+			return out[i].Resource.Type < out[j].Resource.Type
+		}
+		return out[i].Resource.Name < out[j].Resource.Name
+	})
+	return out, nil
+}
+
 // EdgeExplanation bundles an edge with its evidence records.
 type EdgeExplanation struct {
 	Edge     *models.Edge      `json:"edge"`

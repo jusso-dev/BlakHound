@@ -79,6 +79,7 @@ blakhound mcp                              # serve the same analysis over MCP (s
 | `blakhound path --from --to` | Explained attack paths |
 | `blakhound who-can-access <res>` | Principals that can reach a resource |
 | `blakhound what-can-access <principal>` | Resources a principal can reach |
+| `blakhound exposure` | Resources reachable from the internet |
 | `blakhound explain <edge-id>` | Evidence behind an edge |
 | `blakhound graph --format mermaid\|dot\|json` | Export the graph |
 | `blakhound doctor` | Environment & database health checks |

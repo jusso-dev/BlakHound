@@ -61,6 +61,7 @@ func newRootCmd() *cobra.Command {
 		newPathCmd(),
 		newWhoCanAccessCmd(),
 		newWhatCanAccessCmd(),
+		newExposureCmd(),
 		newExplainCmd(),
 		newGraphCmd(),
 		newSearchCmd(),

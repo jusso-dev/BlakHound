@@ -22,11 +22,12 @@ traversal depth/result limits are enforced.
 
 `aws_identity`, `get_collection_status`, `search_aws_resources`,
 `get_aws_resource`, `find_attack_paths`, `find_privilege_escalation_paths`,
-`who_can_access_resource`, `what_can_principal_access`, `explain_graph_edge`,
+`who_can_access_resource`, `what_can_principal_access`,
+`find_internet_exposed_resources`, `explain_graph_edge`,
 `list_security_findings`, `get_security_finding`, `export_attack_graph`.
 
 (Collection and snapshot-comparison tools are added with their collectors;
-`collect_aws_inventory`, `find_internet_exposure`, `find_cross_account_access`,
+`collect_aws_inventory`, `find_cross_account_access`,
 `can_principal_access_resource` and `compare_snapshots` are on the roadmap and
 declared in the same registry.)
 

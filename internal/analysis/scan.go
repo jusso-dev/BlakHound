@@ -25,7 +25,7 @@ func Scan(ctx context.Context, store *graph.Store, snapshotID string, accountID 
 		return nil, err
 	}
 	now := time.Now().UTC()
-	var findings []models.Finding
+	findings := []models.Finding{}
 
 	users, err := store.NodesByType(ctx, models.NodeIAMUser)
 	if err != nil {
