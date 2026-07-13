@@ -14,6 +14,7 @@ import (
 	"github.com/jusso-dev/BlakHound/internal/collector"
 	"github.com/jusso-dev/BlakHound/internal/collector/compute"
 	"github.com/jusso-dev/BlakHound/internal/collector/identity"
+	"github.com/jusso-dev/BlakHound/internal/collector/network"
 	"github.com/jusso-dev/BlakHound/internal/collector/storage"
 	"github.com/jusso-dev/BlakHound/internal/config"
 	"github.com/jusso-dev/BlakHound/internal/graph"
@@ -95,6 +96,11 @@ func (s *Service) Collect(ctx context.Context, opts CollectOptions) (*CollectRes
 		return nil, fmt.Errorf("derive resource access: %w", err)
 	}
 	derived += resAccess
+	netExposure, err := analysis.DeriveNetworkExposure(ctx, s.Store, snap.ID, ident.Account)
+	if err != nil {
+		return nil, fmt.Errorf("derive network exposure: %w", err)
+	}
+	derived += netExposure
 
 	runID := "run-" + now.Format("20060102T150405Z")
 	_ = s.Store.RecordCollectionRun(ctx, runID, snap.ID, ident.Account, ident.ARN, "completed",
@@ -124,6 +130,9 @@ func selectCollectors(services []string) []collector.Collector {
 		"ec2":            compute.NewEC2(),
 		"lambda":         compute.NewLambda(),
 		"ecs":            compute.NewECS(),
+		"vpc":            network.NewVPC(),
+		"elbv2":          network.NewELB(),
+		"rds":            network.NewRDS(),
 	}
 	if len(services) == 0 {
 		out := make([]collector.Collector, 0, len(all))

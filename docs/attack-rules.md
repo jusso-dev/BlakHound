@@ -30,6 +30,10 @@ code.
 | BH-AWS-IAM-006 | `iam:UpdateAssumeRolePolicy` |
 | BH-AWS-IAM-007 | Effective administrator (`*` on `*`) |
 | BH-AWS-XACCOUNT-001 | Role trusts an external or wildcard principal |
+| BH-AWS-NET-001 | Security group ingress open to `0.0.0.0/0` / `::/0` |
+| BH-AWS-NET-002 | EC2 instance reachable from the internet |
+| BH-AWS-NET-003 | RDS instance publicly accessible |
+| BH-AWS-NET-004 | Load balancer is internet-facing |
 
 Multi-step escalation (e.g. pass-role → assume-role → admin) is found by the
 path engine over derived edges.

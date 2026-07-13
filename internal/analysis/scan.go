@@ -46,6 +46,13 @@ func Scan(ctx context.Context, store *graph.Store, snapshotID string, accountID 
 		findings = append(findings, scanPrincipal(ctx, store, rules, p, sources, snapshotID, now)...)
 	}
 
+	// Network exposure findings (rules BH-AWS-NET-*).
+	netFindings, err := scanNetwork(ctx, store, rules, snapshotID, now)
+	if err != nil {
+		return nil, err
+	}
+	findings = append(findings, netFindings...)
+
 	// Cross-account / external trust findings (rule BH-AWS-XACCOUNT-001).
 	if r, ok := rules["BH-AWS-XACCOUNT-001"]; ok {
 		for _, role := range roles {
@@ -115,6 +122,58 @@ func scanPrincipal(ctx context.Context, store *graph.Store, rules map[string]Rul
 		}
 	}
 	return out
+}
+
+// scanNetwork emits findings for internet-open security groups and
+// internet-reachable resources from the collected/derived network edges.
+func scanNetwork(ctx context.Context, store *graph.Store, rules map[string]Rule, snapshotID string, now time.Time) ([]models.Finding, error) {
+	var out []models.Finding
+
+	// BH-AWS-NET-001: security groups open to 0.0.0.0/0.
+	if r, ok := rules["BH-AWS-NET-001"]; ok {
+		open, err := store.OutEdges(ctx, models.NodeInternet, []string{models.EdgeAllowsIngress})
+		if err != nil {
+			return nil, err
+		}
+		for _, e := range open {
+			sg, err := store.GetNode(ctx, e.ToNodeID)
+			if err != nil || sg == nil {
+				continue
+			}
+			ports, _ := e.Properties["ports"].(string)
+			out = append(out, newFinding(r, sg.ID, sg.ID, snapshotID, now, e.EvidenceIDs,
+				fmt.Sprintf("Security group %s allows inbound %s from the internet (0.0.0.0/0).", sg.Name, ports)))
+		}
+	}
+
+	// BH-AWS-NET-002/003/004: resources reachable from the internet.
+	reach, err := store.OutEdges(ctx, models.NodeInternet, []string{models.EdgeReachableFrom})
+	if err != nil {
+		return nil, err
+	}
+	for _, e := range reach {
+		res, err := store.GetNode(ctx, e.ToNodeID)
+		if err != nil || res == nil {
+			continue
+		}
+		expl, _ := e.Properties["explanation"].(string)
+		if expl == "" {
+			expl = fmt.Sprintf("%s is reachable from the internet.", res.Name)
+		}
+		rid := "BH-AWS-NET-002"
+		switch res.Type {
+		case models.NodeRDSInstance:
+			rid = "BH-AWS-NET-003"
+		case models.NodeLoadBalancer:
+			rid = "BH-AWS-NET-004"
+		}
+		r, ok := rules[rid]
+		if !ok {
+			continue
+		}
+		out = append(out, newFinding(r, res.ID, res.ID, snapshotID, now, e.EvidenceIDs, expl))
+	}
+	return out, nil
 }
 
 // newFinding builds a finding with a stable fingerprint from rule + endpoints.

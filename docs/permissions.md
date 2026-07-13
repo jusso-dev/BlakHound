@@ -18,9 +18,22 @@ iam:GenerateCredentialReport
 iam:GetCredentialReport
 ```
 
-As storage/compute/network collectors land, add their `List*`/`Get*`/`Describe*`
+Storage, compute and network collectors add their `List*`/`Get*`/`Describe*`
 actions (S3, Secrets Manager *metadata only*, KMS, EC2, Lambda, ECS, ELBv2,
-RDS). These are documented per collector as they ship.
+RDS). The network slice (collectors `vpc`, `elbv2`, `rds`) needs:
+
+```
+ec2:DescribeVpcs
+ec2:DescribeSubnets
+ec2:DescribeRouteTables
+ec2:DescribeInternetGateways
+ec2:DescribeNatGateways
+ec2:DescribeSecurityGroups
+ec2:DescribeNetworkInterfaces
+elasticloadbalancing:DescribeLoadBalancers
+elasticloadbalancing:DescribeTargetGroups
+rds:DescribeDBInstances
+```
 
 ## Resource scoping
 
