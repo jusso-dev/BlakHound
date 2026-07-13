@@ -38,7 +38,7 @@ tidy:
 clean:
 	rm -rf bin dist
 
-# Opt-in live AWS integration tests (requires BLAKHOUND_AWS_INTEGRATION=1).
+# Opt-in live AWS integration tests. These only call read-only List/Get/Describe APIs.
 .PHONY: test-aws-integration
 test-aws-integration:
 	BLAKHOUND_AWS_INTEGRATION=1 go test -tags=awsintegration ./...

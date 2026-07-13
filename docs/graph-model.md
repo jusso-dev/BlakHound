@@ -52,6 +52,8 @@ statement, effect, action, resource, principal and condition.
 
 ## Snapshots
 
-Each collection creates a `snapshot`. Nodes/edges record `LastSeenAt`; resources
-that disappear are retained as history rather than deleted, enabling snapshot
-comparison.
+Each collection creates a `snapshot` record and nodes/edges record `LastSeenAt`.
+After a successful collection, the active graph is reconciled within the
+selected service and region scopes so removed AWS resources do not remain in
+queries. Snapshot and collection-run metadata are retained; historical graph
+diff storage remains roadmap work.

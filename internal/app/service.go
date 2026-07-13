@@ -34,9 +34,10 @@ func New(store *graph.Store, cfg *config.Config) *Service {
 
 // CollectOptions configures a collection run.
 type CollectOptions struct {
-	Services []string
-	Regions  []string
-	Force    bool
+	Services   []string
+	Regions    []string
+	AllRegions bool
+	Force      bool
 }
 
 // CollectResult summarises a collection run.
@@ -61,16 +62,39 @@ func (s *Service) Collect(ctx context.Context, opts CollectOptions) (*CollectRes
 	if err != nil {
 		return nil, err
 	}
-	now := time.Now().UTC()
-	snap, err := s.Store.CreateSnapshot(ctx, ident.Account, "", now)
+	if s.Cfg.AccountID != "" && s.Cfg.AccountID != ident.Account {
+		return nil, fmt.Errorf("authenticated account %s does not match --account-id %s", ident.Account, s.Cfg.AccountID)
+	}
+	if opts.AllRegions && (len(opts.Regions) > 0 || s.Cfg.Region != "") {
+		return nil, fmt.Errorf("--all-regions cannot be combined with --region or --regions")
+	}
+	regions := append([]string(nil), opts.Regions...)
+	if opts.AllRegions {
+		regions, err = awsclient.EnabledRegions(ctx, awsCfg)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if len(regions) == 0 && awsCfg.Region != "" {
+		regions = []string{awsCfg.Region}
+	}
+	collectors, err := selectCollectors(opts.Services)
 	if err != nil {
 		return nil, err
 	}
+	if opts.Force && len(opts.Services) > 0 {
+		return nil, fmt.Errorf("--force rebuilds the complete inventory and cannot be combined with --services")
+	}
+	started := time.Now().UTC()
 
-	target := collector.Target{AWSConfig: awsCfg, AccountID: ident.Account, CallerARN: ident.ARN, Regions: opts.Regions}
-	collectors := selectCollectors(opts.Services)
+	target := collector.Target{AWSConfig: awsCfg, AccountID: ident.Account, CallerARN: ident.ARN, Regions: regions}
 
-	agg := &collector.CollectionResult{}
+	agg := &collector.CollectionResult{Warnings: []collector.Warning{}}
+	type completedCollection struct {
+		collector collector.Collector
+		result    *collector.CollectionResult
+	}
+	var completed []completedCollection
 	for _, c := range collectors {
 		r, err := c.Collect(ctx, target)
 		if err != nil {
@@ -82,10 +106,44 @@ func (s *Service) Collect(ctx context.Context, opts CollectOptions) (*CollectRes
 			continue
 		}
 		agg.Merge(*r)
+		completed = append(completed, completedCollection{collector: c, result: r})
 	}
-
+	if opts.Force && len(agg.Warnings) > 0 {
+		return nil, fmt.Errorf("refusing --force rebuild with %d collection warning(s)", len(agg.Warnings))
+	}
+	snap, err := s.Store.CreateSnapshot(ctx, ident.Account, "", time.Now().UTC())
+	if err != nil {
+		return nil, err
+	}
+	snapshotComplete := false
+	defer func() {
+		if !snapshotComplete {
+			_ = s.Store.DeleteSnapshot(context.Background(), snap.ID)
+		}
+	}()
+	if opts.Force {
+		if err := s.Store.ResetInventory(ctx); err != nil {
+			return nil, fmt.Errorf("reset inventory: %w", err)
+		}
+	}
 	if err := s.Store.Import(ctx, snap.ID, agg.Nodes, agg.Edges, agg.Evidence); err != nil {
 		return nil, fmt.Errorf("import graph: %w", err)
+	}
+	for _, item := range completed {
+		if len(item.result.Warnings) > 0 {
+			continue
+		}
+		nodeTypes, edgeTypes := collectionOwnership(item.collector.Name())
+		scopeRegions := regions
+		if item.collector.Regions() == collector.ScopeGlobal {
+			scopeRegions = nil
+		}
+		if err := s.Store.PruneCollectionScope(ctx, snap.ID, ident.Account, nodeTypes, edgeTypes, scopeRegions); err != nil {
+			return nil, fmt.Errorf("reconcile %s collection: %w", item.collector.Name(), err)
+		}
+	}
+	if err := s.Store.DeleteDerivedGraph(ctx); err != nil {
+		return nil, fmt.Errorf("clear derived graph: %w", err)
 	}
 	derived, err := analysis.DeriveEdges(ctx, s.Store, snap.ID, ident.Account)
 	if err != nil {
@@ -102,15 +160,16 @@ func (s *Service) Collect(ctx context.Context, opts CollectOptions) (*CollectRes
 	}
 	derived += netExposure
 
-	runID := "run-" + now.Format("20060102T150405Z")
+	runID := "run-" + started.Format("20060102T150405.000000000Z")
 	_ = s.Store.RecordCollectionRun(ctx, runID, snap.ID, ident.Account, ident.ARN, "completed",
-		join(opts.Regions), join(opts.Services), agg.APIRequests, now, time.Now().UTC())
+		join(regions), join(opts.Services), agg.APIRequests, started, time.Now().UTC())
 	for _, w := range agg.Warnings {
-		_ = s.Store.RecordCollectionError(ctx, runID, w.Service, w.API, w.Region, w.Code, w.Message, w.Impact, now)
+		_ = s.Store.RecordCollectionError(ctx, runID, w.Service, w.API, w.Region, w.Code, w.Message, w.Impact, started)
 	}
 	_ = s.Store.SetMeta(ctx, "account_id", ident.Account)
 	_ = s.Store.SetMeta(ctx, "caller_arn", ident.ARN)
 	_ = s.Store.SetMeta(ctx, "latest_snapshot", snap.ID)
+	snapshotComplete = true
 
 	return &CollectResult{
 		SnapshotID: snap.ID, AccountID: ident.Account, CallerARN: ident.ARN,
@@ -119,7 +178,7 @@ func (s *Service) Collect(ctx context.Context, opts CollectOptions) (*CollectRes
 	}, nil
 }
 
-func selectCollectors(services []string) []collector.Collector {
+func selectCollectors(services []string) ([]collector.Collector, error) {
 	all := map[string]collector.Collector{
 		"iam":            identity.NewIAM(),
 		"s3":             storage.NewS3(),
@@ -139,21 +198,59 @@ func selectCollectors(services []string) []collector.Collector {
 		for _, name := range sortedKeys(all) {
 			out = append(out, all[name])
 		}
-		return out
+		return out, nil
 	}
 	var out []collector.Collector
 	for _, s := range services {
-		if c, ok := all[s]; ok {
-			out = append(out, c)
+		c, ok := all[s]
+		if !ok {
+			return nil, fmt.Errorf("unknown service %q (available: %s)", s, join(sortedKeys(all)))
 		}
+		out = append(out, c)
 	}
-	return out
+	return out, nil
+}
+
+func collectionOwnership(service string) (nodeTypes, edgeTypes []string) {
+	switch service {
+	case "iam":
+		return []string{models.NodeAWSAccount, models.NodeIAMUser, models.NodeIAMGroup, models.NodeIAMRole, models.NodeIAMPolicy, models.NodeInstanceProfile},
+			[]string{models.EdgeMemberOf, models.EdgeAttachedPolicy, models.EdgeInlinePolicy, models.EdgeRunsAs}
+	case "s3":
+		return []string{models.NodeS3Bucket}, []string{models.EdgePublicAccess, models.EdgeCrossAccountAccess}
+	case "secretsmanager":
+		return []string{models.NodeSecret}, []string{models.EdgeEncryptedBy, models.EdgePublicAccess, models.EdgeCrossAccountAccess}
+	case "kms":
+		return []string{models.NodeKMSKey}, []string{models.EdgePublicAccess, models.EdgeCrossAccountAccess}
+	case "sqs":
+		return []string{models.NodeSQSQueue}, []string{models.EdgePublicAccess, models.EdgeCrossAccountAccess}
+	case "sns":
+		return []string{models.NodeSNSTopic}, []string{models.EdgePublicAccess, models.EdgeCrossAccountAccess}
+	case "ec2":
+		return []string{models.NodeEC2Instance}, []string{models.EdgeHasInstanceProfile, models.EdgeDeployedIn}
+	case "lambda":
+		return []string{models.NodeLambdaFunction}, []string{models.EdgeRunsAs, models.EdgePublicAccess, models.EdgeCrossAccountAccess}
+	case "ecs":
+		return []string{models.NodeECSTaskDefinition, models.NodeECSCluster, models.NodeECSService}, []string{models.EdgeRunsAs}
+	case "vpc":
+		return []string{models.NodeVPC, models.NodeSubnet, models.NodeRouteTable, models.NodeSecurityGroup, models.NodeNetworkACL, models.NodeInternetGateway, models.NodeNATGateway},
+			[]string{models.EdgeAttachedTo, models.EdgeDeployedIn, models.EdgeRoutesTo, models.EdgeAllowsIngress}
+	case "elbv2":
+		return []string{models.NodeLoadBalancer, models.NodeTargetGroup}, []string{models.EdgeAttachedTo, models.EdgeDeployedIn, models.EdgeFronts}
+	case "rds":
+		return []string{models.NodeRDSInstance}, []string{models.EdgeAttachedTo, models.EdgeDeployedIn}
+	default:
+		return nil, nil
+	}
 }
 
 // Scan runs the rule engine and returns findings.
 func (s *Service) Scan(ctx context.Context) ([]models.Finding, error) {
 	snap, _ := s.Store.LatestSnapshot(ctx)
 	acct, _ := s.Store.GetMeta(ctx, "account_id")
+	if err := s.Store.ResolveOpenFindings(ctx); err != nil {
+		return nil, err
+	}
 	return analysis.Scan(ctx, s.Store, snap, acct)
 }
 

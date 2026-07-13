@@ -175,7 +175,7 @@ func newCollectCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return withService(cmd.Context(), func(ctx context.Context, svc *app.Service) error {
 				res, err := svc.Collect(ctx, app.CollectOptions{
-					Services: config.SplitList(servicesFlag), Regions: cfg.Regions, Force: force,
+					Services: config.SplitList(servicesFlag), Regions: cfg.Regions, AllRegions: cfg.AllRegions, Force: force,
 				})
 				if err != nil {
 					return err
@@ -191,6 +191,7 @@ func newCollectCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&force, "force", false, "force a fresh collection")
+	cmd.Flags().BoolVar(&cfg.AllRegions, "all-regions", false, "collect every enabled AWS region")
 	cmd.Flags().StringVar(&servicesFlag, "services", "", "comma-separated services (default all)")
 	return cmd
 }

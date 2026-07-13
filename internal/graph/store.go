@@ -97,7 +97,7 @@ func (s *Store) migrate(ctx context.Context) error {
 // CreateSnapshot inserts a new snapshot and returns it.
 func (s *Store) CreateSnapshot(ctx context.Context, accountID, note string, now time.Time) (models.Snapshot, error) {
 	snap := models.Snapshot{
-		ID:        fmt.Sprintf("snap-%s", now.UTC().Format("20060102T150405Z")),
+		ID:        fmt.Sprintf("snap-%s", now.UTC().Format("20060102T150405.000000000Z")),
 		AccountID: accountID,
 		CreatedAt: now.UTC(),
 		Note:      note,
@@ -122,6 +122,13 @@ func (s *Store) LatestSnapshot(ctx context.Context) (string, error) {
 	return id, err
 }
 
+// DeleteSnapshot removes an incomplete snapshot record after a failed import or
+// derivation. Completed collection runs retain their snapshots.
+func (s *Store) DeleteSnapshot(ctx context.Context, id string) error {
+	_, err := s.db.ExecContext(ctx, `DELETE FROM snapshots WHERE id=?`, id)
+	return err
+}
+
 // ListSnapshots returns snapshots newest first.
 func (s *Store) ListSnapshots(ctx context.Context) ([]models.Snapshot, error) {
 	rows, err := s.db.QueryContext(ctx,
@@ -130,7 +137,7 @@ func (s *Store) ListSnapshots(ctx context.Context) ([]models.Snapshot, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var out []models.Snapshot
+	out := []models.Snapshot{}
 	for rows.Next() {
 		var sn models.Snapshot
 		var ts string
@@ -171,6 +178,200 @@ func (s *Store) Import(ctx context.Context, snapshotID string, nodes []models.No
 		}
 	}
 	return tx.Commit()
+}
+
+// ResetInventory clears the rebuildable graph while preserving snapshots,
+// collection history, metadata and finding suppressions.
+func (s *Store) ResetInventory(ctx context.Context) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	for _, statement := range []string{
+		`DELETE FROM finding_evidence`, `DELETE FROM finding_paths`, `DELETE FROM findings`,
+		`DELETE FROM edge_evidence`, `DELETE FROM edges`, `DELETE FROM nodes`, `DELETE FROM evidence`,
+	} {
+		if _, err := tx.ExecContext(ctx, statement); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+// DeleteDerivedGraph removes derived edges before they are recomputed from the
+// current structural inventory. Orphaned derived synthetic nodes are removed.
+func (s *Store) DeleteDerivedGraph(ctx context.Context) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	if _, err := tx.ExecContext(ctx,
+		`DELETE FROM edge_evidence WHERE edge_id IN (SELECT id FROM edges WHERE properties LIKE '%"derived":true%')`); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM edges WHERE properties LIKE '%"derived":true%'`); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx,
+		`DELETE FROM nodes WHERE properties LIKE '%"derived":true%' AND id NOT IN (SELECT from_node_id FROM edges UNION SELECT to_node_id FROM edges)`); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx,
+		`DELETE FROM nodes WHERE type IN ('external-account','service-principal','anonymous-principal','internet','authenticated-aws-principal')
+		 AND id NOT IN (SELECT from_node_id FROM edges UNION SELECT to_node_id FROM edges)`); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// PruneCollectionScope removes structural records in a successfully collected
+// service/region scope when they were not observed in the new snapshot.
+func (s *Store) PruneCollectionScope(ctx context.Context, snapshotID, accountID string, nodeTypes, edgeTypes, regions []string) error {
+	if len(nodeTypes) == 0 {
+		return nil
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	scope := `account_id=? AND snapshot_id<>? AND type IN (` + placeholders(len(nodeTypes)) + `)`
+	args := []any{accountID, snapshotID}
+	for _, typ := range nodeTypes {
+		args = append(args, typ)
+	}
+	if len(regions) > 0 {
+		scope += ` AND region IN (` + placeholders(len(regions)) + `)`
+		for _, region := range regions {
+			args = append(args, region)
+		}
+	}
+	rows, err := tx.QueryContext(ctx, `SELECT id FROM nodes WHERE `+scope, args...)
+	if err != nil {
+		return err
+	}
+	var staleNodeIDs []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			rows.Close()
+			return err
+		}
+		staleNodeIDs = append(staleNodeIDs, id)
+	}
+	if err := rows.Close(); err != nil {
+		return err
+	}
+
+	var staleEdgeIDs []string
+	if len(edgeTypes) > 0 {
+		edgeQuery := `SELECT DISTINCT e.id FROM edges e
+			LEFT JOIN nodes f ON f.id=e.from_node_id LEFT JOIN nodes t ON t.id=e.to_node_id
+			WHERE e.snapshot_id<>? AND e.type IN (` + placeholders(len(edgeTypes)) + `)
+			AND ((f.account_id=? AND f.type IN (` + placeholders(len(nodeTypes)) + `))
+			 OR (t.account_id=? AND t.type IN (` + placeholders(len(nodeTypes)) + `)
+			     AND f.type IN ('internet','anonymous-principal','external-account','service-principal')))`
+		edgeArgs := []any{snapshotID}
+		for _, typ := range edgeTypes {
+			edgeArgs = append(edgeArgs, typ)
+		}
+		edgeArgs = append(edgeArgs, accountID)
+		for _, typ := range nodeTypes {
+			edgeArgs = append(edgeArgs, typ)
+		}
+		edgeArgs = append(edgeArgs, accountID)
+		for _, typ := range nodeTypes {
+			edgeArgs = append(edgeArgs, typ)
+		}
+		if len(regions) > 0 {
+			edgeQuery += ` AND (f.region IN (` + placeholders(len(regions)) + `) OR t.region IN (` + placeholders(len(regions)) + `))`
+			for _, region := range regions {
+				edgeArgs = append(edgeArgs, region)
+			}
+			for _, region := range regions {
+				edgeArgs = append(edgeArgs, region)
+			}
+		}
+		edgeRows, err := tx.QueryContext(ctx, edgeQuery, edgeArgs...)
+		if err != nil {
+			return err
+		}
+		for edgeRows.Next() {
+			var id string
+			if err := edgeRows.Scan(&id); err != nil {
+				edgeRows.Close()
+				return err
+			}
+			staleEdgeIDs = append(staleEdgeIDs, id)
+		}
+		if err := edgeRows.Close(); err != nil {
+			return err
+		}
+	}
+	if len(staleNodeIDs) > 0 {
+		q := `SELECT id FROM edges WHERE from_node_id IN (` + placeholders(len(staleNodeIDs)) + `) OR to_node_id IN (` + placeholders(len(staleNodeIDs)) + `)`
+		nodeArgs := make([]any, 0, len(staleNodeIDs)*2)
+		for _, id := range staleNodeIDs {
+			nodeArgs = append(nodeArgs, id)
+		}
+		for _, id := range staleNodeIDs {
+			nodeArgs = append(nodeArgs, id)
+		}
+		attachedRows, err := tx.QueryContext(ctx, q, nodeArgs...)
+		if err != nil {
+			return err
+		}
+		for attachedRows.Next() {
+			var id string
+			if err := attachedRows.Scan(&id); err != nil {
+				attachedRows.Close()
+				return err
+			}
+			staleEdgeIDs = append(staleEdgeIDs, id)
+		}
+		if err := attachedRows.Close(); err != nil {
+			return err
+		}
+	}
+	staleEdgeIDs = unique(staleEdgeIDs)
+	if len(staleEdgeIDs) > 0 {
+		values := make([]any, len(staleEdgeIDs))
+		for i, id := range staleEdgeIDs {
+			values[i] = id
+		}
+		marks := placeholders(len(values))
+		if _, err := tx.ExecContext(ctx, `DELETE FROM edge_evidence WHERE edge_id IN (`+marks+`)`, values...); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `DELETE FROM edges WHERE id IN (`+marks+`)`, values...); err != nil {
+			return err
+		}
+	}
+	if len(staleNodeIDs) > 0 {
+		values := make([]any, len(staleNodeIDs))
+		for i, id := range staleNodeIDs {
+			values[i] = id
+		}
+		if _, err := tx.ExecContext(ctx, `DELETE FROM nodes WHERE id IN (`+placeholders(len(values))+`)`, values...); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+func unique(values []string) []string {
+	seen := map[string]bool{}
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		if value != "" && !seen[value] {
+			seen[value] = true
+			out = append(out, value)
+		}
+	}
+	return out
 }
 
 func insertEvidence(ctx context.Context, tx *sql.Tx, e models.Evidence) error {
@@ -302,7 +503,7 @@ func (s *Store) NodesByType(ctx context.Context, typ string) ([]models.Node, err
 		return nil, err
 	}
 	defer rows.Close()
-	var out []models.Node
+	out := []models.Node{}
 	for rows.Next() {
 		n, err := scanNode(rows)
 		if err != nil {
@@ -320,7 +521,7 @@ func (s *Store) AllNodes(ctx context.Context) ([]models.Node, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var out []models.Node
+	out := []models.Node{}
 	for rows.Next() {
 		n, err := scanNode(rows)
 		if err != nil {
@@ -399,7 +600,7 @@ func (s *Store) OutEdges(ctx context.Context, fromID string, edgeTypes []string)
 		return nil, err
 	}
 	defer rows.Close()
-	var out []models.Edge
+	out := []models.Edge{}
 	for rows.Next() {
 		e, err := s.scanEdge(ctx, rows)
 		if err != nil {
@@ -432,7 +633,7 @@ func (s *Store) InEdges(ctx context.Context, toID string, edgeTypes []string) ([
 		return nil, err
 	}
 	defer rows.Close()
-	var out []models.Edge
+	out := []models.Edge{}
 	for rows.Next() {
 		e, err := s.scanEdge(ctx, rows)
 		if err != nil {
@@ -450,7 +651,7 @@ func (s *Store) AllEdges(ctx context.Context) ([]models.Edge, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var out []models.Edge
+	out := []models.Edge{}
 	for rows.Next() {
 		e, err := s.scanEdge(ctx, rows)
 		if err != nil {
@@ -506,7 +707,7 @@ func (s *Store) Search(ctx context.Context, q string, types []string, limit int)
 		return nil, err
 	}
 	defer rows.Close()
-	var out []models.Node
+	out := []models.Node{}
 	for rows.Next() {
 		n, err := scanNode(rows)
 		if err != nil {

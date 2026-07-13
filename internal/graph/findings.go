@@ -53,6 +53,14 @@ type FindingFilter struct {
 	Status   []string
 }
 
+// ResolveOpenFindings marks findings from the previous scan resolved. Findings
+// rediscovered by the next scan are reopened by UpsertFinding; suppressions are
+// preserved independently.
+func (s *Store) ResolveOpenFindings(ctx context.Context) error {
+	_, err := s.db.ExecContext(ctx, `UPDATE findings SET status=? WHERE status=?`, models.StatusResolved, models.StatusOpen)
+	return err
+}
+
 func (s *Store) ListFindings(ctx context.Context, f FindingFilter) ([]models.Finding, error) {
 	q := `SELECT id,rule_id,title,description,severity,confidence,category,status,source_node_id,target_node_id,remediation,first_seen_at,last_seen_at,snapshot_id,fingerprint FROM findings WHERE 1=1`
 	var args []any

@@ -24,16 +24,28 @@ RDS). The network slice (collectors `vpc`, `elbv2`, `rds`) needs:
 
 ```
 ec2:DescribeVpcs
+ec2:DescribeRegions
 ec2:DescribeSubnets
 ec2:DescribeRouteTables
 ec2:DescribeInternetGateways
 ec2:DescribeNatGateways
 ec2:DescribeSecurityGroups
 ec2:DescribeNetworkInterfaces
+ec2:DescribeNetworkAcls
 elasticloadbalancing:DescribeLoadBalancers
+elasticloadbalancing:DescribeListeners
 elasticloadbalancing:DescribeTargetGroups
 rds:DescribeDBInstances
 ```
+
+## Regions and refreshes
+
+`blakhound collect --all-regions` calls `ec2:DescribeRegions` once and then
+collects every enabled region. `--force` rebuilds the complete active inventory
+(and therefore cannot be combined with `--services`) while preserving
+collection history and finding suppressions. A normal collection
+reconciles only the selected services and regions, so partial collections do
+not remove unrelated inventory.
 
 ## Resource scoping
 

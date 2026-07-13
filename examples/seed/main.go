@@ -49,6 +49,8 @@ func run(dbPath string) error {
 	secretARN := "arn:aws:secretsmanager:ap-southeast-2:" + acct + ":secret:prod/db"
 	kmsARN := "arn:aws:kms:ap-southeast-2:" + acct + ":key/1234abcd-12ab-34cd-56ef-1234567890ab"
 	sgWebARN := "arn:aws:ec2:ap-southeast-2:" + acct + ":security-group/sg-web"
+	subnetARN := "arn:aws:ec2:ap-southeast-2:" + acct + ":subnet/subnet-public"
+	aclARN := "arn:aws:ec2:ap-southeast-2:" + acct + ":network-acl/acl-public"
 	webInstARN := "arn:aws:ec2:ap-southeast-2:" + acct + ":instance/i-web"
 	rdsARN := "arn:aws:rds:ap-southeast-2:" + acct + ":db:prod"
 
@@ -70,15 +72,19 @@ func run(dbPath string) error {
 			Properties: map[string]any{"key_manager": "CUSTOMER"}},
 		{ID: models.NodeInternet, Type: models.NodeInternet, Name: "Internet (0.0.0.0/0)", FirstSeenAt: now, LastSeenAt: now},
 		{ID: sgWebARN, Type: models.NodeSecurityGroup, AccountID: acct, Region: "ap-southeast-2", ARN: sgWebARN, Name: "web-sg", FirstSeenAt: now, LastSeenAt: now,
-			Properties: map[string]any{"open_ingress_ports": "tcp/22, tcp/443"}},
+			Properties: map[string]any{"open_ingress_ports": "tcp/22, tcp/443, tcp/5432"}},
+		{ID: subnetARN, Type: models.NodeSubnet, AccountID: acct, Region: "ap-southeast-2", ARN: subnetARN, Name: "subnet-public", FirstSeenAt: now, LastSeenAt: now,
+			Properties: map[string]any{"public": true}},
+		{ID: aclARN, Type: models.NodeNetworkACL, AccountID: acct, Region: "ap-southeast-2", ARN: aclARN, Name: "acl-public", FirstSeenAt: now, LastSeenAt: now,
+			Properties: map[string]any{"open_ingress_ports": "all traffic", "open_egress_ports": "all traffic"}},
 		{ID: webInstARN, Type: models.NodeEC2Instance, AccountID: acct, Region: "ap-southeast-2", ARN: webInstARN, Name: "i-web", FirstSeenAt: now, LastSeenAt: now,
 			Properties: map[string]any{"public_ip": "203.0.113.10"}},
 		{ID: rdsARN, Type: models.NodeRDSInstance, AccountID: acct, Region: "ap-southeast-2", ARN: rdsARN, Name: "prod", FirstSeenAt: now, LastSeenAt: now,
-			Properties: map[string]any{"publicly_accessible": true, "engine": "postgres"}},
+			Properties: map[string]any{"publicly_accessible": true, "engine": "postgres", "port": 5432}},
 	}
 	ingress := models.Edge{ID: collector.EdgeID(models.NodeInternet, models.EdgeAllowsIngress, sgWebARN),
 		FromNodeID: models.NodeInternet, ToNodeID: sgWebARN, Type: models.EdgeAllowsIngress, Effect: "Allow",
-		Confidence: models.ConfidenceDefinite, Properties: map[string]any{"explanation": "web-sg allows inbound tcp/22, tcp/443 from 0.0.0.0/0", "ports": "tcp/22, tcp/443"}, FirstSeenAt: now, LastSeenAt: now}
+		Confidence: models.ConfidenceDefinite, Properties: map[string]any{"explanation": "web-sg allows inbound tcp/22, tcp/443, tcp/5432 from 0.0.0.0/0", "ports": "tcp/22, tcp/443, tcp/5432"}, FirstSeenAt: now, LastSeenAt: now}
 	edges := []models.Edge{
 		{ID: collector.EdgeID(aliceARN, models.EdgeInlinePolicy, inlineID), FromNodeID: aliceARN, ToNodeID: inlineID, Type: models.EdgeInlinePolicy, Confidence: models.ConfidenceDefinite, Properties: map[string]any{"explanation": "Inline policy deploy on alice"}, FirstSeenAt: now, LastSeenAt: now},
 		{ID: collector.EdgeID(adminRoleARN, models.EdgeAttachedPolicy, adminPolicyARN), FromNodeID: adminRoleARN, ToNodeID: adminPolicyARN, Type: models.EdgeAttachedPolicy, Confidence: models.ConfidenceDefinite, Properties: map[string]any{"explanation": "AdministratorAccess attached to AdminLambdaRole"}, FirstSeenAt: now, LastSeenAt: now},
@@ -86,6 +92,9 @@ func run(dbPath string) error {
 		ingress,
 		{ID: collector.EdgeID(webInstARN, models.EdgeAttachedTo, sgWebARN), FromNodeID: webInstARN, ToNodeID: sgWebARN, Type: models.EdgeAttachedTo, Confidence: models.ConfidenceDefinite, Properties: map[string]any{"explanation": "i-web attached to web-sg"}, FirstSeenAt: now, LastSeenAt: now},
 		{ID: collector.EdgeID(rdsARN, models.EdgeAttachedTo, sgWebARN), FromNodeID: rdsARN, ToNodeID: sgWebARN, Type: models.EdgeAttachedTo, Confidence: models.ConfidenceDefinite, Properties: map[string]any{"explanation": "prod attached to web-sg"}, FirstSeenAt: now, LastSeenAt: now},
+		{ID: collector.EdgeID(webInstARN, models.EdgeDeployedIn, subnetARN), FromNodeID: webInstARN, ToNodeID: subnetARN, Type: models.EdgeDeployedIn, Confidence: models.ConfidenceDefinite, Properties: map[string]any{"explanation": "i-web deployed in public subnet"}, FirstSeenAt: now, LastSeenAt: now},
+		{ID: collector.EdgeID(rdsARN, models.EdgeDeployedIn, subnetARN), FromNodeID: rdsARN, ToNodeID: subnetARN, Type: models.EdgeDeployedIn, Confidence: models.ConfidenceDefinite, Properties: map[string]any{"explanation": "prod deployed in public subnet"}, FirstSeenAt: now, LastSeenAt: now},
+		{ID: collector.EdgeID(subnetARN, models.EdgeAttachedTo, aclARN), FromNodeID: subnetARN, ToNodeID: aclARN, Type: models.EdgeAttachedTo, Confidence: models.ConfidenceDefinite, Properties: map[string]any{"explanation": "public subnet uses open network ACL"}, FirstSeenAt: now, LastSeenAt: now},
 	}
 	snap, err := store.CreateSnapshot(ctx, acct, "demo", now)
 	if err != nil {

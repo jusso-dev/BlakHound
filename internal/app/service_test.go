@@ -75,3 +75,16 @@ func TestInternetExposureEmptyJSON(t *testing.T) {
 		t.Fatalf("expected empty JSON array, got %s", b)
 	}
 }
+
+func TestSelectCollectorsRejectsUnknownService(t *testing.T) {
+	if _, err := selectCollectors([]string{"not-a-service"}); err == nil {
+		t.Fatal("expected unknown service error")
+	}
+	collectors, err := selectCollectors([]string{"vpc", "rds"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(collectors) != 2 || collectors[0].Name() != "vpc" || collectors[1].Name() != "rds" {
+		t.Fatalf("unexpected collectors: %+v", collectors)
+	}
+}

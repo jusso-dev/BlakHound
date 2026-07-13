@@ -7,8 +7,8 @@ same deterministic analysis as the CLI.
 - Optional: `--transport http --listen 127.0.0.1:8787`. Binds localhost only;
   non-localhost requires the explicit `--allow-remote` flag.
 
-The server obtains AWS credentials from the normal process environment when
-`collect_aws_inventory` is invoked.
+The MCP server queries an existing local BlakHound database. AWS collection is
+performed explicitly with the CLI before starting the server.
 
 ## Safety guarantees
 
@@ -26,10 +26,8 @@ traversal depth/result limits are enforced.
 `find_internet_exposed_resources`, `explain_graph_edge`,
 `list_security_findings`, `get_security_finding`, `export_attack_graph`.
 
-(Collection and snapshot-comparison tools are added with their collectors;
-`collect_aws_inventory`, `find_cross_account_access`,
-`can_principal_access_resource` and `compare_snapshots` are on the roadmap and
-declared in the same registry.)
+Collection, mutation and arbitrary query tools are intentionally not exposed
+over MCP. Snapshot comparison remains roadmap work.
 
 ## Resources
 

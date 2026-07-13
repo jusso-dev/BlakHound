@@ -1,6 +1,3 @@
-<!-- Logo / banner placeholder -->
-<p align="center"><img src="docs/banner-placeholder.png" alt="BlakHound" height="120"/></p>
-
 # BlakHound
 
 BlakHound maps AWS identities, policies, workloads, networks and resources into
@@ -16,9 +13,6 @@ database or LLM is required.
 > keys that are not available during offline analysis. **Possible** and
 > **unknown** paths must be manually validated. BlakHound is read-only and never
 > modifies your AWS account.
-
-<!-- CLI demo placeholder -->
-<p align="center"><img src="docs/demo-placeholder.gif" alt="demo" width="640"/></p>
 
 ## Why BlakHound
 
@@ -59,6 +53,7 @@ BlakHound **never** stores AWS secret keys in its database or config.
 ```bash
 blakhound auth check                       # confirm identity
 blakhound collect                          # read-only inventory -> local graph
+blakhound collect --all-regions            # inventory every enabled AWS region
 blakhound scan                             # run attack-rule detections
 blakhound findings --status open           # review findings
 blakhound path --from arn:aws:iam::123456789012:user/alice \
@@ -108,10 +103,9 @@ localhost HTTP transport.
 - **Identity:** IAM users/groups/roles/policies, inline + managed policies, role trust policies, instance profiles, STS.
 - **Storage & data:** S3 (bucket policy, public-access block), Secrets Manager (metadata only — never values), KMS (key policies), SQS, SNS.
 - **Compute:** EC2 (instance profiles), Lambda (execution role + resource policy), ECS (task/execution roles).
+- **Network:** VPCs, subnets, route tables, internet/NAT gateways, security groups, network ACLs, ELBv2 listeners/target groups and RDS instances.
 - **Derived access:** `can-read`/`can-decrypt`/`can-invoke`/`can-consume`/`can-publish` edges from principals to resources, plus workload-identity paths (EC2/Lambda/ECS → role → data).
-
-Network (VPC, security groups, load balancers, RDS) collectors are next on the
-roadmap and drop in behind the same `Collector` interface.
+- **Internet exposure:** Public addressing, internet-gateway routes, security-group ingress, network ACLs and actual ELB/RDS ports are combined into explained `reachable-from` edges.
 
 ## Graph model
 
@@ -141,8 +135,8 @@ or an AWS managed read-only policy (broader than needed). See
 ## Known limitations
 
 - Not a formal AWS IAM authorization simulator; condition evaluation is partial and surfaced as uncertainty.
-- Network reachability is conservative and classified (`confirmed`/`likely`/`possible`/`unknown`).
-- MVP covers IAM deeply; other collectors are on the roadmap.
+- Network reachability is conservative: complete observed paths are `definite`, while missing network-ACL data is surfaced as `possible` with collection warnings.
+- Host firewalls, running processes, AWS WAF and application-layer authentication are outside the offline network model.
 
 ## Roadmap
 
@@ -151,6 +145,12 @@ See [docs/architecture.md](docs/architecture.md) and the repository issues/miles
 ## Contributing
 
 Conventional Commits, `make lint test`, and no AWS write operations — ever.
+
+Run the opt-in, read-only AWS collector check with an authenticated profile:
+
+```bash
+AWS_PROFILE=security-audit AWS_REGION=ap-southeast-2 make test-aws-integration
+```
 
 ## Security policy
 

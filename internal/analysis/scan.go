@@ -171,7 +171,9 @@ func scanNetwork(ctx context.Context, store *graph.Store, rules map[string]Rule,
 		if !ok {
 			continue
 		}
-		out = append(out, newFinding(r, res.ID, res.ID, snapshotID, now, e.EvidenceIDs, expl))
+		finding := newFinding(r, res.ID, res.ID, snapshotID, now, e.EvidenceIDs, expl)
+		finding.Confidence = e.Confidence
+		out = append(out, finding)
 	}
 	return out, nil
 }

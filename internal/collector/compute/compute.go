@@ -78,6 +78,11 @@ func (c *EC2Collector) Collect(ctx context.Context, t collector.Target) (*collec
 					}
 					res.Nodes = append(res.Nodes, models.Node{ID: arn, Type: models.NodeEC2Instance, Provider: "aws",
 						AccountID: t.AccountID, Region: region, ARN: arn, Name: id, FirstSeenAt: now, LastSeenAt: now, Properties: props})
+					if subnetID := aws.ToString(inst.SubnetId); subnetID != "" {
+						subnetARN := "arn:aws:ec2:" + region + ":" + t.AccountID + ":subnet/" + subnetID
+						res.Edges = append(res.Edges, structEdge(arn, models.EdgeDeployedIn, subnetARN, now,
+							"EC2 instance "+id+" is deployed in subnet "+subnetID))
+					}
 					if inst.IamInstanceProfile != nil {
 						ipArn := aws.ToString(inst.IamInstanceProfile.Arn)
 						res.Edges = append(res.Edges, structEdge(arn, models.EdgeHasInstanceProfile, ipArn, now,
