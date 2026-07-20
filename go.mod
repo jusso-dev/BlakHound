@@ -15,7 +15,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/rds v1.120.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.105.0
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.43.0
-	github.com/aws/aws-sdk-go-v2/service/sns v1.41.0
+	github.com/aws/aws-sdk-go-v2/service/sns v1.41.1
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.45.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.44.0
 	github.com/aws/smithy-go v1.27.3
