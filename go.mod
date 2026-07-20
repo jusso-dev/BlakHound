@@ -10,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ecs v1.88.0
 	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2 v1.56.0
 	github.com/aws/aws-sdk-go-v2/service/iam v1.55.0
-	github.com/aws/aws-sdk-go-v2/service/kms v1.54.0
+	github.com/aws/aws-sdk-go-v2/service/kms v1.54.1
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.97.0
 	github.com/aws/aws-sdk-go-v2/service/rds v1.120.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.105.0
